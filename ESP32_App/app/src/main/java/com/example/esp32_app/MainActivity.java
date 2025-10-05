@@ -1,9 +1,7 @@
 package com.example.esp32_app;
 
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -13,7 +11,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,61 +19,53 @@ import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView textViewTemp, textViewHum, textViewLastUpdated;
-    private EditText editTextThreshold;
+    private TextView textViewTemp, textViewHum, textViewLastUpdated, textviewThreshold;
     private SwitchMaterial switchMode;
-    private Button buttonSubmitThreshold;
-    private DatabaseReference dhtDataRef, thresholdRef, modeRef;
+    private ImageButton buttonIncrement, buttonDecrement;
+    private DatabaseReference latestRef, thresholdRef, modeRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Initialize UI components
         textViewTemp = findViewById(R.id.textViewTemp);
         textViewHum = findViewById(R.id.textViewHum);
         textViewLastUpdated = findViewById(R.id.textViewLastUpdated);
-        editTextThreshold = findViewById(R.id.editTextThreshold);
+        textviewThreshold = findViewById(R.id.textViewThreshold);
         switchMode = findViewById(R.id.switchMode);
-        buttonSubmitThreshold = findViewById(R.id.buttonSubmitThreshold);
+        buttonIncrement = findViewById(R.id.buttonIncrement);
+        buttonDecrement = findViewById(R.id.buttonDecrement);
 
+        // Initialize Firebase references
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        dhtDataRef = database.getReference("DHT_Data");
-        thresholdRef = database.getReference("Config/threshold");
-        modeRef = database.getReference("Config/mode");
+        latestRef = database.getReference("Config/Latest");
+        thresholdRef = database.getReference("Config/Threshold");
+        modeRef = database.getReference("Config/Mode");
 
         setupListeners();
     }
 
     private void setupListeners() {
-        // Query to get the latest data entry by ordering by key (timestamp)
-        Query lastDataQuery = dhtDataRef.orderByKey().limitToLast(1);
-
-        lastDataQuery.addValueEventListener(new ValueEventListener() {
+        // Listen for latest temperature and humidity updates from Firebase
+        latestRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
-                    // Since we limited to 1, there's only one child
-                    for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
-                        Float temperature = childSnapshot.child("temperature").getValue(Float.class);
-                        Integer humidity = childSnapshot.child("humidity").getValue(Integer.class);
-                        String timestampStr = childSnapshot.getKey();
-                        if (timestampStr != null) {
-                            try {
-                                long timestamp = Long.parseLong(timestampStr);
-                                updateTimestamp(timestamp);
-                            } catch (NumberFormatException e) {
-                                Log.e("MainActivity", "Invalid timestamp format: " + timestampStr, e);
-                                textViewLastUpdated.setText("Last updated: Invalid timestamp");
-                            }
-                        }
+                    Float temperature = dataSnapshot.child("Temperature").getValue(Float.class);
+                    Float humidity = dataSnapshot.child("Humidity").getValue(Float.class);
+                    Long timestamp = dataSnapshot.child("Timestamp").getValue(Long.class);
 
-                        if (temperature != null) {
-                            textViewTemp.setText(String.format(Locale.US, "%.1f °C", temperature));
-                        }
-                        if (humidity != null) {
-                            textViewHum.setText(String.format(Locale.US, "%d %%", humidity));
-                        }
+                    if (timestamp != null) {
+                        updateTimestamp(timestamp);
+                    }
+
+                    if (temperature != null) {
+                        textViewTemp.setText(String.format(Locale.US, "%.1f °C", temperature));
+                    }
+                    if (humidity != null) {
+                        textViewHum.setText(String.format(Locale.US, "%.1f %%", humidity));
                     }
                 }
             }
@@ -94,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 Float threshold = dataSnapshot.getValue(Float.class);
                 if (threshold != null) {
-                    editTextThreshold.setText(String.valueOf(threshold));
+                    textviewThreshold.setText(String.format(Locale.US, "%.1f", threshold));
                 }
             }
             @Override
@@ -111,28 +100,47 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
-        });
-
-
-        // Set threshold when the new button is clicked
-        buttonSubmitThreshold.setOnClickListener(v -> {
-            try {
-                float threshold = Float.parseFloat(editTextThreshold.getText().toString());
-                thresholdRef.setValue(threshold)
-                        .addOnSuccessListener(aVoid -> Toast.makeText(MainActivity.this, "Threshold updated!", Toast.LENGTH_SHORT).show())
-                        .addOnFailureListener(e -> Toast.makeText(MainActivity.this, "Failed to update.", Toast.LENGTH_SHORT).show());
-            } catch (NumberFormatException e) {
-                Toast.makeText(MainActivity.this, "Invalid number format", Toast.LENGTH_SHORT).show();
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(MainActivity.this, "Database error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
             }
+
         });
+
+        buttonIncrement.setOnClickListener(v -> updateThreshold(1.0f));
+        buttonDecrement.setOnClickListener(v -> updateThreshold(-1.0f));
 
         // Set mode when switch is toggled
         switchMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            modeRef.setValue(isChecked ? "alert" : "normal");
+            String newMode = isChecked ? "alert" : "normal";
+            modeRef.get().addOnSuccessListener(snapshot -> {
+                String currentMode = snapshot.getValue(String.class);
+                if (!newMode.equals(currentMode)) {
+                    modeRef.setValue(newMode)
+                            .addOnSuccessListener(aVoid -> Toast.makeText(MainActivity.this, "Mode set to " + newMode, Toast.LENGTH_SHORT).show())
+                            .addOnFailureListener(e -> Toast.makeText(MainActivity.this, "Failed to set mode.", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
     }
 
+    // Update threshold value in Firebase
+    private void updateThreshold(float delta) {
+        try {
+            float currentThreshold = Float.parseFloat(textviewThreshold.getText().toString());
+            float newThreshold = currentThreshold + delta;
+            thresholdRef.setValue(newThreshold)
+                    .addOnSuccessListener(aVoid -> {
+                        // The listener will update the TextView
+                        textviewThreshold.setText(String.format(Locale.US, "%.1f", newThreshold));
+                        Toast.makeText(MainActivity.this, "Threshold updated!", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> Toast.makeText(MainActivity.this, "Failed to update.", Toast.LENGTH_SHORT).show());
+        } catch (NumberFormatException e) {
+            Toast.makeText(MainActivity.this, "Invalid number format", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Convert Unix timestamp to human-readable format and update TextView
     private void updateTimestamp(long unixSeconds) {
         Date date = new Date(unixSeconds * 1000L); // Convert seconds to milliseconds
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());

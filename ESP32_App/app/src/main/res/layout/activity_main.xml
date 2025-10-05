@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!-- Temperature Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardTemp"
         android:layout_width="0dp"
@@ -38,10 +39,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="-- °C"
-                android:textSize="24sp" />
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/labelTemp"
+                app:layout_constraintBottom_toBottomOf="@+id/labelTemp"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- Humidity Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardHum"
         android:layout_width="0dp"
@@ -76,45 +81,84 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/textFieldThreshold"
+    <!-- 🆕 Threshold Controller (replacing EditText + Button) -->
+    <LinearLayout
+        android:id="@+id/layoutThresholdControl"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/cardTemp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/buttonDecrement"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle"
+            android:src="@drawable/ic_remove"
+            android:contentDescription="Decrease"
+            android:scaleType="centerInside"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/textViewThreshold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:text="25.0 °C"
+            android:textSize="32sp"
+            android:textColor="#333"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/buttonIncrement"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_circle"
+            android:src="@drawable/outline_add_2_24"
+            android:contentDescription="Increase"
+            android:scaleType="centerInside"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Alert Mode Switch -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/alertModeLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
-        android:layout_marginEnd="8dp"
-        app:layout_constraintEnd_toStartOf="@+id/buttonSubmitThreshold"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        app:layout_constraintTop_toBottomOf="@id/layoutThresholdControl"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardTemp">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editTextThreshold"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/textAlertMode"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="Temperature Threshold (°C)"
-            android:inputType="numberDecimal" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:text="Alert Mode"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#333"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
-    <Button
-        android:id="@+id/buttonSubmitThreshold"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:text="Update"
-        app:layout_constraintBottom_toBottomOf="@id/textFieldThreshold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/textFieldThreshold" />
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchMode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/textAlertMode"
+            app:layout_constraintBottom_toBottomOf="@+id/textAlertMode" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/switchMode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:text="Alert Mode"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textFieldThreshold" />
-
+    <!-- Last updated -->
     <TextView
         android:id="@+id/textViewLastUpdated"
         android:layout_width="wrap_content"
@@ -123,6 +167,6 @@
         android:text="Last updated: --"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/switchMode" />
+        app:layout_constraintTop_toBottomOf="@id/alertModeLayout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
