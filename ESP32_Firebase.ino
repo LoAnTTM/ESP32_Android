@@ -1,21 +1,26 @@
-#define _WIFIMGR_LOGLEVEL_ 4
-#include <WiFiManager.h>              
-#include <WiFiUdp.h>
+#include <WiFi.h>              
 #include <FirebaseESP32.h>            
 #include <DHT.h>                      
-#include <NTPClient.h>                
+#include <time.h>                
 
 // ---- REPLACE WITH YOUR OWN INFO ----
+#define WIFI_SSID "Your_WiFi_SSID"
+#define WIFI_PASSWORD "Your_WiFi_Password"
 #define API_KEY "Firebase_API_Key"
 #define DATABASE_URL "Database_URL"  // e.g., "your-project-id.firebaseio.com"
 
-// ---- DHT11 setup ----
+// ---- DHT22 setup ----
 #define DHTPIN 23   
-#define DHTTYPE DHT22 //Change to DHT11 if you use DHT11 
+#define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
-// --- Declare WiFiManager object ---
-WiFiManager wifiManager;
+// ---- Pin definitions ----
+#define BUZZER_PIN 4
+#define LED_RED 17
+#define LED_GREEN 18
+#define LED_BLUE 19
+#define BUTTON_PIN 22
+
 // --- Configure NTP Client to get time ---
 WiFiUDP ntpUDP;
 // Viet Nam timezone is GMT+7 (7 * 3600(s/hr) = 25200 (s))
@@ -50,16 +55,16 @@ void setup() {
 
     // Starting WiFi Manager
     Serial.println("Starting WiFiManager...");
-    // Check if already connected to WiFi
-    if (WiFi.status() != WL_CONNECTED) {
-        // If not, open config portal and wait until user enters correct info
-        wifiManager.startConfigPortal("ESP32_WifiConfig");
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
     }
-    
-    Serial.println("");
     Serial.println("WiFi Connected!");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
+
+    // --- Configure NTP Client ---
     timeClient.begin();
     // Wait for time to be synchronized
     Serial.print("Synchronizing time");
