@@ -34,3 +34,5 @@ ESP32 (firmware) instructions
 4. Update configuration values in the sketch: Firebase credentials/endpoints (API key / project IDs) as needed.
 5. Upload the sketch to the board and open the Serial Monitor to view logs (common baud rate: 115200).
 
+
+![ESP32 App Screenshot](ESP32_App.png)
