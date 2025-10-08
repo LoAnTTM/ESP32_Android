@@ -11,6 +11,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -39,12 +40,25 @@ public class MainActivity extends AppCompatActivity {
         buttonDecrement = findViewById(R.id.buttonDecrement);
 
         // Initialize Firebase references
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        latestRef = database.getReference("Config/Latest");
-        thresholdRef = database.getReference("Config/Threshold");
-        modeRef = database.getReference("Config/Mode");
+        FirebaseAuth auth = FirebaseAuth.getInstance();
 
-        setupListeners();
+        String email = "test@mail.com";
+        String password = "test@1.";
+        if (auth.getCurrentUser() == null) {
+            auth.signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(this, "Signed in automatically", Toast.LENGTH_SHORT).show();
+                            initFirebaseReferences();
+                            setupListeners();
+                        } else {
+                            Toast.makeText(this, "Login failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+        }else {
+            initFirebaseReferences();
+            setupListeners();
+        }
     }
 
     private void setupListeners() {
@@ -121,6 +135,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
+    }
+
+    private void initFirebaseReferences() {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        latestRef = database.getReference("Config/Latest");
+        thresholdRef = database.getReference("Config/Threshold");
+        modeRef = database.getReference("Config/Mode");
     }
 
     // Update threshold value in Firebase

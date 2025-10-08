@@ -1,3 +1,12 @@
+/*
+  Project: ESP32 Firebase IoT Controller
+  Description:
+  This sketch runs on an ESP32 to read temperature and humidity from a DHT22 sensor.
+  It connects to Firebase to send sensor data and receive commands. The device can
+  be toggled between 'NORMAL' and 'ALERT' modes either by a physical button or
+  remotely via an Android app. In ALERT mode, it triggers a buzzer and LED if the
+  temperature exceeds a configurable threshold.
+*/
 #include <WiFi.h>
 #include <FirebaseESP32.h>
 #include <DHT.h>
@@ -9,6 +18,8 @@
 #define API_KEY "Firebase_API_Key"
 #define DATABASE_URL "Database_URL" 
 // e.g., "https://<project-id>-default-rtdb.asia-southeast1.firebasedatabase.app"
+#define USER_EMAIL "Your_Firebase_User_Email"
+#define USER_PASSWORD "Your_Firebase_User_Password"
 
 // ========== DHT22 ==========
 #define DHTPIN   23
@@ -30,7 +41,7 @@ const char* ntpServer = "asia.pool.ntp.org";
 const long  gmtOffset_sec = 25200;   // GMT+7
 const int   daylightOffset_sec = 0;
 
-// ========== Firebase (legacy FirebaseESP32.h library) ==========
+// ========== Firebase ==========
 FirebaseData fbdo;
 FirebaseData stream;
 FirebaseAuth auth;
@@ -193,7 +204,7 @@ void setup() {
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
-  if (!Firebase.signUp(&config, &auth, "", "")) {
+  if (!Firebase.signUp(&config, &auth, USER_EMAIL, USER_PASSWORD)) {
     Serial.printf("SignUp FAILED: %s\n", config.signer.signupError.message.c_str());
   }
   Firebase.begin(&config, &auth);
