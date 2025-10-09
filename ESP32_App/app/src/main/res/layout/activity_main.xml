@@ -7,6 +7,21 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <TextView
+        android:id="@+id/appTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="🌡️ Smart Room Monitor"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <!-- Temperature Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardTemp"
@@ -19,7 +34,7 @@
         app:cardElevation="4dp"
         app:layout_constraintEnd_toStartOf="@+id/cardHum"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/appTitle">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -81,7 +96,7 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- 🆕 Threshold Controller (replacing EditText + Button) -->
+    <!-- Threshold Controller ( EditText + Button) -->
     <LinearLayout
         android:id="@+id/layoutThresholdControl"
         android:layout_width="wrap_content"
@@ -93,15 +108,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageButton
+        <Button
             android:id="@+id/buttonDecrement"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_circle"
-            android:src="@drawable/ic_remove"
-            android:contentDescription="Decrease"
-            android:scaleType="centerInside"
-            app:tint="@android:color/white" />
+            android:background="@drawable/remove_circle" />
+
 
         <TextView
             android:id="@+id/textViewThreshold"
@@ -114,15 +126,11 @@
             android:textColor="#333"
             android:textStyle="bold" />
 
-        <ImageButton
+        <Button
             android:id="@+id/buttonIncrement"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_circle"
-            android:src="@drawable/outline_add_2_24"
-            android:contentDescription="Increase"
-            android:scaleType="centerInside"
-            app:tint="@android:color/white" />
+            android:background="@drawable/add_circle" />
     </LinearLayout>
 
     <!-- Alert Mode Switch -->

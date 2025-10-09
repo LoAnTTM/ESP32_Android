@@ -25,9 +25,6 @@
 #define DHTPIN   23
 #define DHTTYPE  DHT22
 DHT dht(DHTPIN, DHTTYPE);
-#define tempThreshold  30.0
-float temp = NAN;
-float hum  = NAN;
 
 // ========== I/O PINS ==========
 #define BUZZER_PIN 4
@@ -56,6 +53,10 @@ unsigned long lastReadMs = 0;
 
 enum Mode { MODE_NORMAL = 0, MODE_ALERT = 1 };
 Mode currentMode = MODE_NORMAL;
+
+float tempThreshold = 30.0;  // Can be updated from Firebase
+float temp = NAN;
+float hum  = NAN;
 
 // ------------ UTILITIES ------------
 void setRGB(bool r, bool g, bool b) {
@@ -97,15 +98,15 @@ void streamCallback(StreamData data) {
                 data.dataType().c_str());
 
   // /Config/mode → string
-  if (data.dataPath() == "/mode" && data.dataType() == "string") {
+  if (data.dataPath() == "/Mode" && data.dataType() == "string") {
     String newMode = data.stringData();
     Serial.print("Firebase mode changed to: "); Serial.println(newMode);
     currentMode = (newMode == "alert") ? MODE_ALERT : MODE_NORMAL;
     showMode(currentMode);
   }
 
-  // /Config/threshold → int/float/double
-  if (data.dataPath() == "/threshold" &&
+  // /Config/threshold → number
+  if (data.dataPath() == "/Threshold" &&
       (data.dataType() == "int" || data.dataType() == "float" || data.dataType() == "double")) {
     tempThreshold = data.floatData();
     Serial.printf("Firebase threshold updated to: %.2f\n", tempThreshold);
@@ -125,7 +126,7 @@ void handleButtonPress() {
       currentMode = (currentMode == MODE_NORMAL) ? MODE_ALERT : MODE_NORMAL;
 
       String modeStr = (currentMode == MODE_NORMAL) ? "normal" : "alert";
-      Firebase.setString(fbdo, "/Config/mode", modeStr);
+      Firebase.setString(fbdo, "/Config/Mode", modeStr);
 
       showMode(currentMode);
       lastPressMs = now;
@@ -151,25 +152,25 @@ void readAndSendData() {
     Serial.printf("Temp: %.2f C, Hum: %.1f %%\n", temp, hum);
 
     if (Firebase.ready()) {
-        time_t now; time(&now);
-        unsigned long ts = now;
+      time_t now; time(&now);
+      unsigned long ts = now;
 
-        // Send data to /DHT_Data/<timestamp>
-        String path = "/DHT_Data/" + String(ts);
-        FirebaseJson json;
-        json.set("temperature", temp);
-        json.set("humidity", hum);
+      String path = "/DHT_Data/" + String(ts);
 
-        Serial.print("Pushing to: "); Serial.println(path);
-        if (!Firebase.setJSON(fbdo, path.c_str(), json)) {
-        Serial.printf("FAILED to push to DHT_Data: %s\n", fbdo.errorReason().c_str());
-        }
+      FirebaseJson json;
+      json.set("Temperature", temp);
+      json.set("Humidity", hum);
 
-        // Update latest temperature and humidity in /Config
-        Serial.println("Updating /Config with latest temp and hum...");
-        Firebase.setFloat(fbdo, "/Config/latest/temperature", temp);
-        Firebase.setFloat(fbdo, "/Config/latest/humidity", hum);
-        Firebase.setInt(fbdo,   "/Config/latest/ts", (int)ts);
+      Serial.print("Pushing to: "); Serial.println(path);
+      if (!Firebase.setJSON(fbdo, path.c_str(), json)) {
+        Serial.printf("FAILED: %s\n", fbdo.errorReason().c_str());
+      }
+
+      // Update latest temperature and humidity in /Config
+      Serial.println("Updating /Config with latest temp and hum...");
+      Firebase.setFloat(fbdo, "/Config/Latest/Temperature", temp);
+      Firebase.setFloat(fbdo, "/Config/Latest/Humidity", hum);
+      Firebase.setInt(fbdo,   "/Config/Latest/Timestamp", (int)ts);
     }
   }
   if (currentMode == MODE_ALERT) showMode(currentMode);
@@ -200,7 +201,7 @@ void setup() {
   while (!getLocalTime(&timeinfo)) { Serial.print("."); delay(500); }
   Serial.println("\nTime synchronized!");
 
-  // Firebase
+  // Firebase setup
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
@@ -219,9 +220,9 @@ void setup() {
 
   // Initial values
   Serial.println("Getting initial config...");
-  if (Firebase.getString(fbdo, "/Config/mode"))
-    currentMode = (fbdo.stringData() == "normal") ? MODE_NORMAL : MODE_ALERT;
-  if (Firebase.getFloat(fbdo, "/Config/threshold"))
+  if (Firebase.getString(fbdo, "/Config/Mode"))
+    currentMode = (fbdo.stringData() == "alert") ? MODE_ALERT : MODE_NORMAL;
+  if (Firebase.getFloat(fbdo, "/Config/Threshold"))
     tempThreshold = fbdo.floatData();
 
   Serial.printf("Initial Mode: %s\n", (currentMode == MODE_ALERT ? "ALERT" : "NORMAL"));
